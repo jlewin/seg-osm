@@ -1,0 +1,11 @@
+services:
+  pytorch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    working_dir: /app
+    tty: true
+    stdin_open: true
+    command: python3
