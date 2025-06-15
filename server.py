@@ -60,7 +60,7 @@ def handle_detect():
     img = Image.open(io.BytesIO(file.read()))
     
     try:
-        point = [img.width / 2 , img.height /2]
+        point = props['point']
 
         # Process the image
         results = detect_segments(img, point)

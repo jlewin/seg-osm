@@ -29,7 +29,7 @@ def show_masks(image, masks, scores):
 
 def contour_to_dbgimage(mask, contours, i):
     np.random.seed(3)
-    
+
     h, w = mask.shape[-2:]
 
     # Create an empty transparent image for drawing contours
@@ -39,7 +39,7 @@ def contour_to_dbgimage(mask, contours, i):
 
     for idx, contour in enumerate(contours):
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
-        mask_image = cv2.drawContours(mask_image, contours, idx, color, thickness=2) 
+        mask_image = cv2.drawContours(mask_image, contours, idx, color, thickness=2)
 
     # Convert numpy array to PIL Image and save
     mask_pil = Image.fromarray((mask_image * 255).astype(np.uint8))
@@ -50,8 +50,8 @@ def show_mask(mask, i):
     mask = mask.astype(np.uint8)
 
     # Extract contours from mask.
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS)
+
     # Filter out small contours
     if contours:
         # Calculate contour areas
@@ -59,10 +59,19 @@ def show_mask(mask, i):
         # Get median area as reference
         median_area = np.median(areas)
         # Filter contours that are significantly smaller than the median
-        contours = [contour for contour, area in zip(contours, areas) if area > median_area * 0.1]
+        # Sort contours by area in descending order (largest first)
+        contours_with_areas = sorted(zip(contours, areas), key=lambda x: x[1], reverse=True)
+        # Filter contours that are significantly smaller than the median
+        contours = [contour for contour, area in contours_with_areas if area > median_area * 0.2]
 
     # Try to smooth contours
-    contours = [cv2.approxPolyDP(contour, epsilon=0.01, closed=True) for contour in contours]
+    contours = [
+        cv2.approxPolyDP(
+            contour,
+            #epsilon=0.01,
+            epsilon=0.004 * cv2.arcLength(contour, True),
+            closed=True)
+            for contour in contours]
 
     contour_data = []
     for idx, contour in enumerate(contours):
@@ -72,7 +81,7 @@ def show_mask(mask, i):
             "contour_id": idx,
             "points": points_array
         })
-        
+
         # # Save the points array to a file for later use
         # with open(f"contour_{i}_{idx}.json", "w") as f:
         #     json.dump(points_array, f)
